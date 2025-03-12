@@ -6,7 +6,7 @@
     <title>welcome</title>
     <style>
         body {
-            background-color: hsl(0, 0%, 83%);
+            background-color: hsl(0, 47%, 97%);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -17,12 +17,22 @@
             font-size: 32px;
         }
         .share-slogan{
-            color:indianred;
+            color:rgb(133, 63, 63);
             font-weight: bold;
         }
         .share-lable{
             color: brown;
             font-weight: bold;
+        }
+        #wtf-share{
+            padding: 2px 2px;
+        }
+        .btn-post{
+            padding: 4px 12px;
+            color: brown;
+            border: solid 1px brown;
+            border-radius: 6px;
+            background-color: rgb(254, 227, 227);
         }
     </style>
 </head>
@@ -31,8 +41,9 @@
         <h3 class="title">What's happening in your life?</h3>
         <p class="share-slogan">whatever it is, share your story here</p>
         <form action="#">
-            <label class="share-lable" for="wtf-share">Share Here</label>
-            <input type="text" id="wtf-share">
+            <!-- <label class="share-lable" for="wtf-share">Share Here</label> -->
+            <input type="text" id="wtf-share" placeholder="share whatever it is">
+            <button class="btn-post">Post</button>
         </form>
     </div>
 </body>
