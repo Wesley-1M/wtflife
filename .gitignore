@@ -1,0 +1,54 @@
+# Markdown files (but keep content directory)
+*.md
+!content/**/*.md
+
+# Node modules
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
