@@ -327,7 +327,8 @@ const LessonPage = {
         html: `<span>${phase.name}</span><i class="fas fa-chevron-right"></i>`
       });
       
-      let isExpanded = true;
+      // Start with phases collapsed by default (except first phase)
+      let isExpanded = phaseIndex === 0;
       DOM.on(title, 'click', () => {
         isExpanded = !isExpanded;
         lessonsContainer.classList.toggle('collapsed', !isExpanded);
@@ -337,7 +338,14 @@ const LessonPage = {
       section.appendChild(title);
 
       // Container for all weeks (collapsible)
-      const lessonsContainer = DOM.create('div', { class: 'sidebar-lessons' });
+      const lessonsContainer = DOM.create('div', { 
+        class: 'sidebar-lessons' + (isExpanded ? '' : ' collapsed')
+      });
+
+      // Set initial rotation for collapsed phases
+      if (!isExpanded) {
+        title.querySelector('i').style.transform = 'rotate(0deg)';
+      }
 
       phase.weeks.forEach(week => {
         // Week header container

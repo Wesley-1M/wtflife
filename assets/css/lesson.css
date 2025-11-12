@@ -125,13 +125,14 @@ body {
 }
 
 .sidebar-lessons {
-  max-height: 1000px;
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
   transition: max-height var(--transition-base);
 }
 
 .sidebar-lessons.collapsed {
   max-height: 0;
+  overflow: hidden;
 }
 
 .sidebar-week-header {
@@ -619,12 +620,12 @@ body {
     overflow: hidden;
     padding: 0;
     border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    border: 1px solid var(--border-color);
     transition: max-height var(--transition-normal);
   }
 
   .lesson-sidebar.open {
-    max-height: 80vh;
+    max-height: 70vh;
     padding: var(--spacing-md);
     overflow-y: auto;
   }
@@ -661,6 +662,10 @@ body {
 
   .lesson-toc-box {
     display: none;
+  }
+
+  .sidebar-footer{
+    /* display: none; */
   }
 }
 

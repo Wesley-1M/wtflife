@@ -745,6 +745,10 @@ nav a.active {
     --spacing-3xl: 2rem;
   }
 
+  .btn {
+    padding: 6px;
+  }
+
   .header-content {
     padding: 0 var(--spacing-md);
   }
