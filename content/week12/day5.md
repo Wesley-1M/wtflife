@@ -1,53 +1,410 @@
-# Week 12: Day 5 - Career Development & Growth
+# Week 12: Day 5 - Capstone: Complete Testing & Deployment
 
-**Duration:** 2 hours  
-**Difficulty:** ⭐⭐⭐
+**Duration:** 3 hours  
+**Difficulty:** ⭐⭐⭐⭐⭐ (Expert)
 
 ---
 
-## Learning Objectives
+## 📚 Learning Objectives
 
-By the end of this day, you should:
-- Understand career paths in tech
-- Be able to set career goals
-- Know how to negotiate compensation
-- Understand continuous learning
+By the end of this capstone, you'll be able to:
+- ✅ Build comprehensive test suites
+- ✅ Set up complete CI/CD pipelines
+- ✅ Deploy applications to production
+- ✅ Monitor application health
+- ✅ Handle production issues
 
-## Topics
+---
 
-- Career paths
-- Salary negotiation
-- Professional development
-- Mentorship
-- Work-life balance
+## 🎯 Project Overview
 
-## Tech Career Paths
+Create a **Production-Ready Social Media Dashboard** with:
+- Unit, integration, and E2E tests
+- Full CI/CD pipeline
+- Automated deployments
+- Production monitoring
+- 80%+ code coverage
 
-### 1. Individual Contributor (IC)
+---
 
-**Junior Developer (Years 0-2)**
-- Learning fundamentals
-- Building first projects
-- Salary: $60K-$90K
-- Focus: Mastery of basics
+## 1️⃣ Project Setup
 
-**Mid-Level Developer (Years 2-5)**
-- Leading projects
-- Mentoring others
-- Salary: $90K-$130K
-- Focus: Problem solving
+### Initialize Project
 
-**Senior Developer (Years 5+)**
-- Architecture decisions
-- Technical strategy
-- Salary: $130K-$200K+
-- Focus: Impact
+```bash
+# Create Next.js app with full setup
+npx create-next-app@latest social-dashboard --typescript --tailwind --app
 
-**Staff/Principal Engineer (Years 8+)**
-- Organization-wide impact
-- Technical direction
-- Salary: $200K-$400K+
-- Focus: Leadership
+cd social-dashboard
+
+# Install testing dependencies
+npm install -D jest @testing-library/react @testing-library/jest-dom
+npm install -D @playwright/test
+npm install -D @next/env
+
+# Install production dependencies
+npm install axios zustand date-fns
+```
+
+### Test Configuration
+
+```javascript
+// jest.config.js
+const nextJest = require('next/jest')
+
+const createJestConfig = nextJest({
+  dir: './',
+})
+
+const customJestConfig = {
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testEnvironment: 'jest-environment-jsdom',
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
+  collectCoverageFrom: [
+    'app/**/*.{js,jsx,ts,tsx}',
+    '!**/*.d.ts',
+    '!**/node_modules/**',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
+}
+
+module.exports = createJestConfig(customJestConfig)
+```
+
+---
+
+## 2️⃣ Unit & Integration Tests
+
+### Component Tests
+
+```jsx
+// app/components/UserCard.test.tsx
+import { render, screen } from '@testing-library/react';
+import { UserCard } from './UserCard';
+
+describe('UserCard', () => {
+  const mockUser = {
+    id: '1',
+    name: 'John Doe',
+    avatar: 'john.jpg',
+    followers: 1000
+  };
+
+  test('renders user information', () => {
+    render(<UserCard user={mockUser} />);
+    
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+    expect(screen.getByText('1000 followers')).toBeInTheDocument();
+  });
+
+  test('calls onClick when card is clicked', () => {
+    const onClick = jest.fn();
+    render(<UserCard user={mockUser} onClick={onClick} />);
+    
+    screen.getByRole('button').click();
+    expect(onClick).toHaveBeenCalledWith(mockUser.id);
+  });
+});
+```
+
+### Hook Tests
+
+```typescript
+// hooks/useFeed.test.ts
+import { renderHook, waitFor } from '@testing-library/react';
+import { useFeed } from './useFeed';
+
+jest.mock('axios');
+
+test('fetches feed posts', async () => {
+  const { result } = renderHook(() => useFeed());
+  
+  expect(result.current.loading).toBe(true);
+  
+  await waitFor(() => {
+    expect(result.current.loading).toBe(false);
+  });
+  
+  expect(result.current.posts.length).toBeGreaterThan(0);
+});
+```
+
+---
+
+## 3️⃣ E2E Tests
+
+### Complete Workflows
+
+```typescript
+// e2e/feed.spec.ts
+import { test, expect } from '@playwright/test';
+
+test('user views and likes posts', async ({ page, context }) => {
+  // Setup: Login
+  await context.addCookies([{
+    name: 'auth_token',
+    value: 'test_token',
+    url: 'http://localhost:3000'
+  }]);
+  
+  // Navigate to feed
+  await page.goto('/feed');
+  
+  // Verify posts load
+  await expect(page.locator('[data-testid="post"]')).toHaveCount(10);
+  
+  // Like a post
+  const firstPost = page.locator('[data-testid="post"]').first();
+  const likeButton = firstPost.locator('button:has-text("Like")');
+  await likeButton.click();
+  
+  // Verify like count increased
+  const likeCount = await firstPost.locator('[data-testid="like-count"]').textContent();
+  expect(likeCount).toBe('1');
+});
+
+test('user searches for users', async ({ page }) => {
+  await page.goto('/explore');
+  
+  const searchInput = page.locator('input[placeholder="Search users"]');
+  await searchInput.fill('john');
+  
+  // Wait for search results
+  await page.waitForResponse(r => r.url().includes('/api/search'));
+  
+  // Verify results appear
+  await expect(page.locator('[data-testid="user-result"]')).not.toHaveCount(0);
+});
+```
+
+---
+
+## 4️⃣ CI/CD Pipeline
+
+### GitHub Actions Workflow
+
+```yaml
+# .github/workflows/ci-cd.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint & Type Check
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - run: npm install
+      - run: npm run lint
+      - run: npm run type-check
+
+  test:
+    runs-on: ubuntu-latest
+    name: Unit & Integration Tests
+    needs: lint
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - run: npm install
+      - run: npm test -- --coverage
+      
+      - uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+
+  build:
+    runs-on: ubuntu-latest
+    name: Build Application
+    needs: test
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - run: npm install
+      - run: npm run build
+      
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: .next/
+          retention-days: 1
+
+  e2e:
+    runs-on: ubuntu-latest
+    name: E2E Tests
+    needs: build
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - run: npm install
+      - run: npx playwright install --with-deps
+      - run: npm run dev > /dev/null 2>&1 &
+      - run: npx wait-on http://localhost:3000
+      - run: npx playwright test
+      
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 3
+
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    needs: [test, e2e]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Vercel
+        uses: vercel/action@master
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          production: true
+
+  notify:
+    runs-on: ubuntu-latest
+    name: Notify Team
+    if: always()
+    needs: [lint, test, build, e2e, deploy]
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "CI/CD Pipeline: ${{ job.status }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Pipeline Status:* ${{ job.status }}\n*Commit:* ${{ github.sha }}\n*Author:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+```
+
+---
+
+## 5️⃣ Deployment & Monitoring
+
+### Environment Configuration
+
+```env
+# .env.production
+NEXT_PUBLIC_API_URL=https://api.example.com
+DATABASE_URL=mongodb+srv://...
+NODE_ENV=production
+```
+
+### Production Checklist
+
+```
+Deployment Checklist:
+
+Security:
+- [ ] Environment variables secured
+- [ ] API keys in Vercel secrets
+- [ ] CORS configured
+- [ ] Rate limiting enabled
+- [ ] Dependencies up to date
+
+Performance:
+- [ ] Image optimization enabled
+- [ ] Caching headers configured
+- [ ] Bundle size < 500KB
+- [ ] Lighthouse score > 90
+- [ ] Core Web Vitals good
+
+Reliability:
+- [ ] Error logging configured
+- [ ] Uptime monitoring active
+- [ ] Backup strategy in place
+- [ ] Rollback plan documented
+- [ ] On-call rotation set
+
+Testing:
+- [ ] Coverage > 80%
+- [ ] E2E tests passing
+- [ ] Staging environment tested
+- [ ] Smoke tests on deploy
+- [ ] Performance tests passing
+```
+
+---
+
+## 📝 Deliverables
+
+### Documentation Files
+
+Create the following files:
+
+1. **TEST_REPORT.md** - Test coverage and results
+2. **DEPLOYMENT_GUIDE.md** - Production deployment steps
+3. **MONITORING_SETUP.md** - Monitoring and alerting
+4. **INCIDENT_RESPONSE.md** - How to handle issues
+
+---
+
+## ✅ Submission Checklist
+
+- [ ] 80%+ code coverage
+- [ ] All tests passing (unit, integration, E2E)
+- [ ] GitHub Actions CI/CD pipeline working
+- [ ] Successful deployment to production
+- [ ] Monitoring and alerting configured
+- [ ] Documentation complete
+- [ ] README with setup instructions
+- [ ] Working application with no critical errors
+
+---
+
+## 🔗 Next Steps
+
+**Next Week (Week 13):** Career Preparation & Final Capstone  
+**Congratulations:** You've mastered testing and deployment!
 
 ### 2. Management Track
 

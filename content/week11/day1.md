@@ -1,229 +1,427 @@
-# Week 11: Day 1 - Algorithms & Data Structures
+# Week 11: Day 1 - Next.js Fundamentals
 
 **Duration:** 2.5 hours  
-**Difficulty:** ⭐⭐⭐⭐
+**Difficulty:** ⭐⭐⭐⭐ (Advanced)  
+**Prerequisites:** Week 10 Complete (React & Performance)
 
 ---
 
-## Learning Objectives
+## 📚 Learning Objectives
 
-By the end of this day, you should:
-- Understand fundamental data structures
-- Know common algorithms
-- Be able to analyze time/space complexity
-- Solve algorithmic problems
+By the end of this lesson, you'll be able to:
+- ✅ Understand Next.js benefits and architecture
+- ✅ Set up a Next.js project
+- ✅ Create pages and routes
+- ✅ Understand SSR vs SSG vs ISR
+- ✅ Implement server-side rendering
 
-## Topics
+---
 
-- Arrays and Linked Lists
-- Stacks and Queues
-- Trees and Graphs
-- Sorting algorithms
-- Searching algorithms
-- Big O notation
+## 1️⃣ Why Next.js?
 
-## Big O Notation
+### React vs Next.js
 
-```javascript
-// O(1) - Constant
-const getFirst = (arr) => arr[0];
+```
+React:
+- Client-side only (by default)
+- Manual setup needed
+- SEO requires extra work
+- Slower first page load
 
-// O(n) - Linear
-const findValue = (arr, target) => {
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] === target) return i;
-  }
-  return -1;
-};
-
-// O(n²) - Quadratic
-const bubbleSort = (arr) => {
-  for (let i = 0; i < arr.length; i++) {
-    for (let j = 0; j < arr.length - 1; j++) {
-      if (arr[j] > arr[j + 1]) {
-        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
-      }
-    }
-  }
-  return arr;
-};
-
-// O(log n) - Logarithmic
-const binarySearch = (arr, target) => {
-  let left = 0, right = arr.length - 1;
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    if (arr[mid] === target) return mid;
-    if (arr[mid] < target) left = mid + 1;
-    else right = mid - 1;
-  }
-  return -1;
-};
+Next.js:
+- Built on React
+- Full-stack framework
+- Built-in SEO
+- Optimized performance
+- File-based routing
+- API routes included
 ```
 
-## Data Structures
+### Key Benefits
 
-### Array
 ```javascript
-// Pros: Fast access (O(1))
-// Cons: Slow insertion/deletion
-const arr = [1, 2, 3];
-arr.push(4);      // O(1)
-arr.shift();      // O(n)
+// 1. SSR - Server-side rendering
+// Page loads faster, SEO friendly
+
+// 2. SSG - Static generation
+// Pre-built pages, fastest performance
+
+// 3. ISR - Incremental Static Regeneration
+// Combine SSG speed with dynamic updates
+
+// 4. API Routes
+// Backend included, no separate server needed
+
+// 5. Image Optimization
+// Automatic image sizing and formats
+
+// 6. Built-in features
+// TypeScript, CSS, env variables, etc.
 ```
 
-### Linked List
-```javascript
-class Node {
-  constructor(value) {
-    this.value = value;
-    this.next = null;
-  }
-}
+---
 
-class LinkedList {
-  constructor() {
-    this.head = null;
-  }
+## 2️⃣ Setup & Project Structure
 
-  push(value) {
-    const node = new Node(value);
-    if (!this.head) {
-      this.head = node;
-    } else {
-      let current = this.head;
-      while (current.next) {
-        current = current.next;
-      }
-      current.next = node;
-    }
-  }
+### Create Next.js App
 
-  pop() {
-    if (!this.head) return null;
-    if (!this.head.next) {
-      const value = this.head.value;
-      this.head = null;
-      return value;
-    }
-    let current = this.head;
-    while (current.next.next) {
-      current = current.next;
-    }
-    const value = current.next.value;
-    current.next = null;
-    return value;
-  }
-}
+```bash
+# Using create-next-app
+npx create-next-app@latest myapp --typescript --tailwind --eslint
+cd myapp
+
+# Or manually
+npm create-next-app@latest
 ```
 
-### Stack
+### Project Structure
+
+```
+app/
+  layout.js         # Root layout
+  page.js           # Home page (/)
+  about/
+    page.js         # /about route
+  blog/
+    [slug]/
+      page.js       # /blog/[slug] dynamic route
+  api/
+    users/
+      route.js      # /api/users API route
+pages/             # Legacy Pages Router (optional)
+public/            # Static files
+styles/            # CSS modules
+lib/               # Shared utilities
+.env.local         # Environment variables
+next.config.js     # Next.js configuration
+```
+
+### Basic Configuration
+
 ```javascript
-class Stack {
-  constructor() {
-    this.items = [];
-  }
-
-  push(item) {
-    this.items.push(item);
-  }
-
-  pop() {
-    return this.items.pop();
-  }
-
-  peek() {
-    return this.items[this.items.length - 1];
-  }
-
-  isEmpty() {
-    return this.items.length === 0;
-  }
-}
-
-// Example: Check matching parentheses
-const isValid = (s) => {
-  const stack = new Stack();
-  const pairs = { ')': '(', '}': '{', ']': '[' };
-  
-  for (let char of s) {
-    if (char === '(' || char === '{' || char === '[') {
-      stack.push(char);
-    } else {
-      if (stack.isEmpty() || stack.pop() !== pairs[char]) {
-        return false;
-      }
-    }
-  }
-  return stack.isEmpty();
+// next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    domains: ['example.com'],
+    formats: ['image/avif', 'image/webp'],
+  },
+  env: {
+    API_URL: process.env.API_URL,
+  },
 };
+
+module.exports = nextConfig;
 ```
 
-### Queue
-```javascript
-class Queue {
-  constructor() {
-    this.items = [];
-  }
+---
 
-  enqueue(item) {
-    this.items.push(item);
-  }
+## 3️⃣ Pages & Routing
 
-  dequeue() {
-    return this.items.shift();
-  }
+### File-Based Routing
 
-  peek() {
-    return this.items[0];
-  }
+```
+app/page.js              → /
+app/about/page.js        → /about
+app/blog/page.js         → /blog
+app/blog/[slug]/page.js  → /blog/nextjs
+```
 
-  isEmpty() {
-    return this.items.length === 0;
-  }
+### Page Component
+
+```jsx
+// app/page.js
+export default function Home() {
+  return (
+    <main>
+      <h1>Welcome to Next.js</h1>
+      <p>Build modern web applications</p>
+    </main>
+  );
 }
 ```
 
-## Common Algorithms
+### Dynamic Routes
 
-### Binary Search
-```javascript
-const binarySearch = (arr, target) => {
-  let left = 0, right = arr.length - 1;
-  
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    if (arr[mid] === target) return mid;
-    if (arr[mid] < target) left = mid + 1;
-    else right = mid - 1;
+```jsx
+// app/blog/[slug]/page.js
+export default function BlogPost({ params }) {
+  const { slug } = params;
+
+  return (
+    <article>
+      <h1>Blog Post: {slug}</h1>
+      <p>Content for {slug}</p>
+    </article>
+  );
+}
+
+// Generate static paths
+export async function generateStaticParams() {
+  return [
+    { slug: 'nextjs-intro' },
+    { slug: 'react-hooks' },
+    { slug: 'web-performance' }
+  ];
+}
+```
+
+### Catch-All Routes
+
+```jsx
+// app/docs/[[...slug]]/page.js
+export default function Docs({ params }) {
+  const { slug } = params;
+
+  if (!slug) {
+    return <h1>Documentation Home</h1>;
   }
-  return -1;
-};
 
-console.log(binarySearch([1, 3, 5, 7, 9], 5)); // 2
+  return (
+    <div>
+      <h1>Docs: {slug.join(' / ')}</h1>
+    </div>
+  );
+}
+
+// /docs → Documentation Home
+// /docs/guides → guides
+// /docs/guides/getting-started → guides/getting-started
 ```
 
-### Quick Sort
-```javascript
-const quickSort = (arr) => {
-  if (arr.length <= 1) return arr;
-  
-  const pivot = arr[0];
-  const left = arr.slice(1).filter(x => x < pivot);
-  const right = arr.slice(1).filter(x => x >= pivot);
-  
-  return [...quickSort(left), pivot, ...quickSort(right)];
-};
+---
 
-console.log(quickSort([3, 1, 4, 1, 5, 9])); // [1, 1, 3, 4, 5, 9]
+## 4️⃣ Server-Side Rendering (SSR)
+
+### getServerSideProps (Pages Router - legacy)
+
+```jsx
+// pages/posts/[id].js
+export async function getServerSideProps(context) {
+  const { id } = context.params;
+
+  const res = await fetch(`/api/posts/${id}`);
+  const post = await res.json();
+
+  if (!post) {
+    return { notFound: true };
+  }
+
+  return {
+    props: { post },
+    revalidate: 60 // Revalidate every 60 seconds
+  };
+}
+
+export default function Post({ post }) {
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.content}</p>
+    </article>
+  );
+}
 ```
 
-## ✅ Checkpoint
+### Server Components (App Router - new)
 
-- [ ] Understand Big O
-- [ ] Know basic data structures
-- [ ] Can implement algorithms
-- [ ] Know sorting techniques
+```jsx
+// app/blog/[slug]/page.js
+async function getPost(slug) {
+  const res = await fetch(`https://api.example.com/posts/${slug}`, {
+    next: { revalidate: 60 }
+  });
+  
+  if (!res.ok) {
+    return null;
+  }
+  
+  return res.json();
+}
 
-**Next:** System Design! 🏗️
+export default async function BlogPost({ params }) {
+  const post = await getPost(params.slug);
+
+  if (!post) {
+    return <div>Post not found</div>;
+  }
+
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <p>{post.content}</p>
+      <time>{new Date(post.date).toDateString()}</time>
+    </article>
+  );
+}
+```
+
+---
+
+## 5️⃣ Static Generation & ISR
+
+### Static Generation (SSG)
+
+```jsx
+// app/blog/page.js
+export const revalidate = 3600; // Revalidate every hour
+
+async function getPosts() {
+  const res = await fetch('https://api.example.com/posts');
+  return res.json();
+}
+
+export default async function BlogList() {
+  const posts = await getPosts();
+
+  return (
+    <div>
+      <h1>Blog Posts</h1>
+      {posts.map(post => (
+        <div key={post.id}>
+          <h2>{post.title}</h2>
+          <p>{post.excerpt}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Incremental Static Regeneration (ISR)
+
+```jsx
+// app/products/[id]/page.js
+export const revalidate = 10; // Revalidate every 10 seconds
+
+export async function generateStaticParams() {
+  // Pre-build popular products
+  const products = await fetch('https://api.example.com/products').then(r => r.json());
+  return products.map(p => ({
+    id: p.id.toString()
+  }));
+}
+
+async function getProduct(id) {
+  const res = await fetch(`https://api.example.com/products/${id}`);
+  return res.json();
+}
+
+export default async function Product({ params }) {
+  const product = await getProduct(params.id);
+
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>${product.price}</p>
+      <p>{product.description}</p>
+    </div>
+  );
+}
+```
+
+---
+
+## 6️⃣ Layouts & Components
+
+### Root Layout
+
+```jsx
+// app/layout.js
+import './globals.css';
+
+export const metadata = {
+  title: 'My App',
+  description: 'Generated by Next.js',
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <header>
+          <nav>Navigation</nav>
+        </header>
+        <main>{children}</main>
+        <footer>Footer</footer>
+      </body>
+    </html>
+  );
+}
+```
+
+### Nested Layouts
+
+```jsx
+// app/blog/layout.js
+import { Sidebar } from '@/components/Sidebar';
+
+export default function BlogLayout({ children }) {
+  return (
+    <div style={{ display: 'flex' }}>
+      <Sidebar />
+      <div style={{ flex: 1 }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+```
+
+### Reusable Components
+
+```jsx
+// app/components/PostCard.jsx
+'use client';
+
+import Link from 'next/link';
+
+export function PostCard({ post }) {
+  return (
+    <article>
+      <h2>{post.title}</h2>
+      <p>{post.excerpt}</p>
+      <Link href={`/blog/${post.slug}`}>
+        Read more
+      </Link>
+    </article>
+  );
+}
+```
+
+---
+
+## 📝 Practice Exercises
+
+### Exercise 1: Create Pages
+Build pages for Home, About, Contact
+
+### Exercise 2: Dynamic Route
+Create dynamic blog post pages
+
+### Exercise 3: Layout
+Implement nested layout with sidebar
+
+### Exercise 4: Rendering Strategy
+Mix SSG, SSR, and ISR strategically
+
+---
+
+## ✅ Summary
+
+- **Next.js** is React + full-stack framework
+- **File-based routing** simplifies navigation
+- **SSR** renders on server (fresh content)
+- **SSG** pre-builds static pages (fast)
+- **ISR** revalidates pages on-demand
+- **Layouts** share UI across pages
+- **Server components** fetch data securely
+
+---
+
+## 🔗 Next Steps
+
+**Tomorrow (Day 2):** Static Generation & ISR Deep Dive  
+**Continue:** Master Next.js rendering strategies!
 

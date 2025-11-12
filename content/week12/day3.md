@@ -1,33 +1,312 @@
-# Week 12: Day 3 - Cloud Architecture
+# Week 12: Day 3 - E2E Testing with Playwright
 
 **Duration:** 2.5 hours  
-**Difficulty:** ⭐⭐⭐⭐
+**Difficulty:** ⭐⭐⭐⭐ (Advanced)  
+**Prerequisites:** Week 12 Days 1-2
 
 ---
 
-## Learning Objectives
+## 📚 Learning Objectives
 
-By the end of this day, you should:
-- Understand cloud platforms (AWS, GCP, Azure)
-- Know cloud deployment options
-- Be able to design cloud architecture
-- Understand serverless computing
+By the end of this lesson, you'll be able to:
+- ✅ Set up Playwright for E2E testing
+- ✅ Write E2E test scenarios
+- ✅ Test complete user workflows
+- ✅ Handle browser interactions
+- ✅ Debug failed tests
 
-## Topics
+---
 
-- Cloud providers comparison
-- EC2 instances
-- Container services (ECS, GKE)
-- Serverless (Lambda, Cloud Functions)
-- Managed databases
-- CDN and storage
+## 1️⃣ Playwright Setup
 
-## Cloud Providers Overview
+### Installation
 
-### AWS (Amazon Web Services)
-- **Pros:** Market leader, extensive services, good pricing
-- **Cons:** Complex, steeper learning curve
-- **Best for:** Enterprise, complex architecture
+```bash
+npm install --save-dev @playwright/test
+npx playwright install
+
+# Install browsers
+npx playwright install chromium firefox webkit
+```
+
+### Configuration
+
+```javascript
+// playwright.config.js
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+  ],
+
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+---
+
+## 2️⃣ Writing E2E Tests
+
+### Basic Test
+
+```javascript
+// e2e/home.spec.js
+import { test, expect } from '@playwright/test';
+
+test('homepage loads', async ({ page }) => {
+  await page.goto('/');
+  
+  await expect(page).toHaveTitle(/Home/);
+  await expect(page.locator('h1')).toContainText('Welcome');
+});
+```
+
+### Navigating Pages
+
+```javascript
+test('navigate between pages', async ({ page }) => {
+  await page.goto('/');
+  
+  // Click link
+  await page.click('a[href="/about"]');
+  
+  // Verify URL changed
+  await expect(page).toHaveURL('/about');
+  
+  // Verify page content
+  await expect(page.locator('h1')).toContainText('About');
+});
+```
+
+---
+
+## 3️⃣ User Interactions
+
+### Forms & Input
+
+```javascript
+test('submit form', async ({ page }) => {
+  await page.goto('/signup');
+  
+  // Fill form
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('input[name="password"]', 'SecurePass123!');
+  
+  // Check checkbox
+  await page.check('input[name="agree"]');
+  
+  // Submit
+  await page.click('button:has-text("Sign Up")');
+  
+  // Wait for navigation
+  await page.waitForURL('/dashboard');
+  
+  // Verify success
+  await expect(page.locator('text=Welcome')).toBeVisible();
+});
+```
+
+### Complex Interactions
+
+```javascript
+test('table operations', async ({ page }) => {
+  await page.goto('/users');
+  
+  // Get table rows
+  const rows = page.locator('tbody tr');
+  const count = await rows.count();
+  expect(count).toBeGreaterThan(0);
+  
+  // Click action in first row
+  await rows.first().locator('button:has-text("Edit")').click();
+  
+  // Fill edit form
+  await page.fill('input[name="name"]', 'Updated Name');
+  await page.click('button:has-text("Save")');
+  
+  // Verify update
+  await expect(page.locator('text=Updated')).toBeVisible();
+});
+```
+
+---
+
+## 4️⃣ Login & Authentication
+
+### Authentication Setup
+
+```javascript
+// auth.setup.js
+import { test as setup } from '@playwright/test';
+
+setup('authenticate', async ({ page }) => {
+  await page.goto('/login');
+  
+  await page.fill('input[name="email"]', 'test@example.com');
+  await page.fill('input[name="password"]', 'password123');
+  await page.click('button:has-text("Login")');
+  
+  // Save auth state
+  await page.context().storageState({ path: 'auth.json' });
+});
+```
+
+### Using Authentication
+
+```javascript
+import { test, expect } from '@playwright/test';
+
+test.use({ storageState: 'auth.json' });
+
+test('authenticated user views dashboard', async ({ page }) => {
+  await page.goto('/dashboard');
+  
+  await expect(page.locator('h1')).toContainText('Dashboard');
+  await expect(page.locator('text=Logged in')).toBeVisible();
+});
+```
+
+---
+
+## 5️⃣ Advanced Testing
+
+### Waiting for Elements
+
+```javascript
+test('wait for dynamic content', async ({ page }) => {
+  await page.goto('/');
+  
+  // Wait for API response
+  await page.waitForResponse(response => 
+    response.url().includes('/api/data') && response.status() === 200
+  );
+  
+  // Wait for element
+  await page.waitForSelector('[data-testid="content"]');
+  
+  // Wait for specific condition
+  await page.waitForFunction(() => {
+    return document.querySelectorAll('li').length > 5;
+  });
+});
+```
+
+### Handling Dialogs
+
+```javascript
+test('handle alerts and dialogs', async ({ page }) => {
+  // Listen for dialog
+  page.once('dialog', dialog => {
+    console.log(`Dialog message: ${dialog.message()}`);
+    dialog.accept();
+  });
+  
+  // Click button that triggers dialog
+  await page.click('button:has-text("Delete")');
+});
+```
+
+### Taking Screenshots
+
+```javascript
+test('take screenshots', async ({ page }) => {
+  await page.goto('/');
+  
+  // Full page screenshot
+  await page.screenshot({ path: 'full.png' });
+  
+  // Element screenshot
+  await page.locator('header').screenshot({ path: 'header.png' });
+  
+  // Viewport size
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.screenshot({ path: 'desktop.png' });
+});
+```
+
+---
+
+## 6️⃣ Running Tests
+
+### Command Line
+
+```bash
+# Run all tests
+npx playwright test
+
+# Run single file
+npx playwright test e2e/home.spec.js
+
+# Run in headed mode (see browser)
+npx playwright test --headed
+
+# Debug mode
+npx playwright test --debug
+
+# Run with UI
+npx playwright test --ui
+
+# Generate HTML report
+npx playwright show-report
+```
+
+---
+
+## 📝 Practice Exercises
+
+### Exercise 1: Complete Workflow
+Test user signup → login → dashboard flow
+
+### Exercise 2: Form Validation
+Test form with various inputs and errors
+
+### Exercise 3: Navigation
+Test all page navigation paths
+
+### Exercise 4: Error Scenarios
+Test error conditions and edge cases
+
+---
+
+## ✅ Summary
+
+- **Playwright** automates cross-browser testing
+- **Locators** find elements reliably
+- **User actions** simulate real usage
+- **Authentication** handles login workflows
+- **Waiting** handles async operations
+- **Debugging** with UI and headed mode
+
+---
+
+## 🔗 Next Steps
+
+**Tomorrow (Day 4):** CI/CD Pipelines  
+**Continue:** Automate your testing!
 
 ### Google Cloud Platform (GCP)
 - **Pros:** Good data analytics, clean interface, competitive pricing

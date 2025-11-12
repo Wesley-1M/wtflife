@@ -1,53 +1,458 @@
-# Week 13: Day 3 - Frontend Implementation
+# Week 13: Day 3 - System Design & Architecture
 
-**Duration:** 3 hours  
-**Difficulty:** ⭐⭐⭐⭐
+**Duration:** 2.5 hours  
+**Difficulty:** ⭐⭐⭐⭐⭐ (Expert)  
+**Prerequisites:** Full-Stack Knowledge
 
 ---
 
-## Learning Objectives
+## 📚 Learning Objectives
 
-By the end of this day, you should:
-- Build React components
-- Implement state management
-- Integrate with API
-- Handle authentication
-- Create responsive UI
+By the end of this lesson, you'll be able to:
+- ✅ Design scalable systems
+- ✅ Discuss trade-offs
+- ✅ Handle system constraints
+- ✅ Design databases at scale
+- ✅ Plan infrastructure
+- ✅ Address non-functional requirements
 
-## Frontend Setup
+---
 
-### Project Structure
+## 1️⃣ System Design Fundamentals
+
+### RASCALE Framework
+
+```typescript
+// RASCALE = Requirements, Architecture, Selection, Calculations, Load, Extend
+
+interface SystemDesignFramework {
+  requirements: {
+    functional: string[]
+    nonFunctional: string[]
+    constraints: string[]
+  }
+  architecture: {
+    components: string[]
+    interactions: string[]
+    dataFlow: string[]
+  }
+  selection: {
+    technologies: string[]
+    tradeoffs: string[]
+    justification: string[]
+  }
+  calculations: {
+    storage: string
+    traffic: string
+    bandwidth: string
+  }
+  load: {
+    balancing: string
+    caching: string
+    optimization: string
+  }
+  extend: {
+    scalability: string
+    reliability: string
+    monitoring: string
+  }
+}
+```
+
+### Estimation Example
+
+```javascript
+// Example: Design YouTube
+
+// Requirements:
+- 2 billion users
+- 500 million daily active users
+- 300+ hours of video uploaded per minute
+- 1 billion videos watched per day
+
+// Back of the envelope calculations:
+
+// Storage:
+const videosPerDay = 300 * 60 * 24 // 432,000 videos
+const avgVideoSize = 1 // GB (compressed)
+const dailyStorage = videosPerDay * avgVideoSize // 432 TB
+const yearlyStorage = dailyStorage * 365 // 157.68 PB per year
+
+// Bandwidth (streaming):
+const usersPerDay = 500_000_000
+const avgVideoLength = 10 // minutes
+const avgBitrate = 1 // Mbps
+const totalBandwidth = (usersPerDay * avgVideoLength * avgBitrate) / 1000
+console.log(`Daily bandwidth needed: ${totalBandwidth} Gbps`)
+
+// Calculations show need for:
+// - Massive distributed storage (CDN)
+// - Database sharding
+// - Caching layer
+// - Load balancing
+```
+
+---
+
+## 2️⃣ Database Design at Scale
+
+### Database Sharding
+
+```sql
+-- Example: Sharding User Data
+
+-- Shard 0: Users 0-999,999
+-- Shard 1: Users 1,000,000-1,999,999
+-- Shard 2: Users 2,000,000-2,999,999
+
+-- Sharding Strategy:
+user_id % number_of_shards = shard_number
+
+-- Implementation:
+-- Shard 0 (user_id % 3 = 0)
+CREATE TABLE users_shard_0 (
+  user_id BIGINT PRIMARY KEY,
+  name VARCHAR(255),
+  email VARCHAR(255),
+  created_at TIMESTAMP,
+  INDEX(email)
+);
+
+-- Similar for shard_1, shard_2
+
+-- Query routing (application level):
+-- 1. Calculate shard: user_id % 3
+-- 2. Route to appropriate database
+-- 3. Execute query
+```
+
+### Replication & Consistency
 
 ```
-frontend/
-├── src/
-│   ├── components/
-│   │   ├── Auth/
-│   │   │   ├── Login.jsx
-│   │   │   ├── Register.jsx
-│   │   │   └── AuthContext.jsx
-│   │   ├── Post/
-│   │   │   ├── PostCard.jsx
-│   │   │   ├── PostForm.jsx
-│   │   │   └── PostList.jsx
-│   │   ├── User/
-│   │   │   ├── UserProfile.jsx
-│   │   │   └── UserCard.jsx
-│   │   ├── Layout/
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   └── Layout.jsx
-│   │   └── Common/
-│   │       ├── Loading.jsx
-│   │       ├── Error.jsx
-│   │       └── Button.jsx
-│   ├── pages/
-│   │   ├── Home.jsx
-│   │   ├── Profile.jsx
-│   │   ├── NotFound.jsx
-│   │   └── Dashboard.jsx
-│   ├── services/
-│   │   ├── api.js
+Replication Strategies:
+
+1. Master-Slave (Master-Replica)
+   - Write to master
+   - Read from replicas
+   - Eventual consistency
+   - Better read performance
+
+2. Master-Master
+   - Multiple masters
+   - All accept writes
+   - Complex conflict resolution
+   - High availability
+
+3. Leader-Based
+   - Primary leader
+   - Secondary replicas
+   - Automatic failover
+   - Industry standard
+
+Consistency Models:
+- Strong: Wait for replication before response
+- Eventual: Replicate asynchronously
+- Causal: Preserve causality
+- Session: Consistent within session
+```
+
+---
+
+## 3️⃣ Caching Strategies
+
+### Cache Levels
+
+```javascript
+// Multi-level caching strategy
+
+class CacheStrategy {
+  // Level 1: In-Memory Cache (Application)
+  inMemoryCache = new Map()
+  
+  // Level 2: Distributed Cache (Redis)
+  redisClient = redis.createClient()
+  
+  // Level 3: Database
+  database = database.connect()
+  
+  async get(key) {
+    // Try in-memory first
+    if (this.inMemoryCache.has(key)) {
+      return this.inMemoryCache.get(key)
+    }
+    
+    // Try Redis
+    const redisValue = await this.redisClient.get(key)
+    if (redisValue) {
+      this.inMemoryCache.set(key, redisValue)
+      return redisValue
+    }
+    
+    // Query database
+    const dbValue = await this.database.query(key)
+    
+    // Populate caches
+    await this.redisClient.set(key, dbValue, 'EX', 3600)
+    this.inMemoryCache.set(key, dbValue)
+    
+    return dbValue
+  }
+}
+
+// Cache invalidation patterns:
+// 1. TTL (Time To Live) - expire after time
+// 2. LRU (Least Recently Used) - remove old entries
+// 3. Write-through - update cache when writing
+// 4. Write-behind - async cache update
+```
+
+### CDN for Static Content
+
+```
+CDN Architecture:
+
+                    User Request
+                         |
+                    [Edge Location]
+                    /              \
+                   /                \
+            Cached               Not Cached
+            Return              |
+                         [Origin Server]
+                              |
+                        [Cache/Store]
+                              |
+                           Return
+
+Benefits:
+- Reduced latency (content closer)
+- Reduced bandwidth (distributed)
+- Increased availability (redundancy)
+- Better performance
+
+Implementation: CloudFront, Fastly, Cloudflare
+```
+
+---
+
+## 4️⃣ API Design at Scale
+
+### API Gateway Pattern
+
+```yaml
+# API Gateway Pattern
+
+User Request
+    |
+    v
+[Load Balancer]
+    |
+    v
+[API Gateway]
+    |
+    +-- Route to Service 1
+    +-- Route to Service 2
+    +-- Route to Service 3
+    
+API Gateway Responsibilities:
+- Request routing
+- Rate limiting
+- Authentication
+- Request/response transformation
+- Caching
+- Logging
+- Circuit breaking
+
+Popular Gateways:
+- Kong
+- AWS API Gateway
+- Azure API Management
+- NGINX
+```
+
+### Rate Limiting Algorithm
+
+```javascript
+// Token Bucket Algorithm
+
+class RateLimiter {
+  constructor(capacity, refillRate) {
+    this.capacity = capacity
+    this.tokens = capacity
+    this.refillRate = refillRate
+    this.lastRefill = Date.now()
+  }
+  
+  refill() {
+    const now = Date.now()
+    const timePassed = (now - this.lastRefill) / 1000
+    const tokensToAdd = timePassed * this.refillRate
+    
+    this.tokens = Math.min(
+      this.capacity,
+      this.tokens + tokensToAdd
+    )
+    this.lastRefill = now
+  }
+  
+  isAllowed() {
+    this.refill()
+    
+    if (this.tokens >= 1) {
+      this.tokens -= 1
+      return true
+    }
+    
+    return false
+  }
+}
+
+// Usage:
+const limiter = new RateLimiter(10, 1) // 10 requests per second
+console.log(limiter.isAllowed()) // true
+console.log(limiter.isAllowed()) // true
+```
+
+---
+
+## 5️⃣ Microservices Architecture
+
+### Microservices Design
+
+```
+Monolithic App:
+[User Service | Product Service | Order Service]
+         |              |               |
+         +---> [Shared Database] <-----+
+
+Issues:
+- Single point of failure
+- Difficult to scale independently
+- Technology lock-in
+
+---
+
+Microservices:
+[User Service] [Product Service] [Order Service]
+       |              |                |
+   [DB]           [DB]              [DB]
+   
+Benefits:
+- Independent deployment
+- Technology flexibility
+- Selective scaling
+- Fault isolation
+
+Challenges:
+- Distributed system complexity
+- Network latency
+- Data consistency
+- Testing difficulty
+```
+
+### Service Communication
+
+```typescript
+// Synchronous: REST/gRPC
+const userService = axios.create({
+  baseURL: 'http://user-service:3001'
+})
+
+const product = await productService.post('/checkout', {
+  userId: 123,
+  items: [...]
+})
+
+// Asynchronous: Message Queue
+const queue = new RabbitMQ()
+
+queue.publish('order.created', {
+  orderId: 456,
+  userId: 123
+})
+
+queue.subscribe('order.created', (message) => {
+  // Process order
+  notificationService.sendConfirmation(message.userId)
+})
+```
+
+---
+
+## 📝 Practice Exercises
+
+### Exercise 1: Design Twitter
+Design a system to handle:
+- 300 million users
+- 500 million tweets per day
+- 100k read requests per second
+- Real-time feed delivery
+
+Topics to cover:
+- User and tweet storage
+- Feed generation algorithm
+- Caching strategy
+- Real-time notifications
+
+### Exercise 2: Design Uber
+Design ride-sharing platform:
+- Location tracking
+- Matching drivers with riders
+- Payment processing
+- Real-time notifications
+
+Include:
+- Geospatial database queries
+- Matching algorithm
+- Scalability considerations
+- Fault tolerance
+
+### Exercise 3: Design Netflix
+Design streaming service:
+- 200 million subscribers
+- 5 billion hours watched/month
+- 1 billion concurrent users peak
+- Real-time recommendations
+
+Cover:
+- Video storage and streaming
+- Recommendation engine
+- CDN strategy
+- Database design
+
+### Exercise 4: Trade-offs Discussion
+For each design, discuss:
+- Consistency vs Availability
+- Latency vs Throughput
+- Storage vs Compute
+- Complexity vs Performance
+
+### Exercise 5: Presentation
+Present a 15-minute system design:
+- Requirements
+- High-level architecture
+- Key decisions with trade-offs
+- Handle interviewer questions
+
+---
+
+## ✅ Summary
+
+- **Back of envelope calculations** guide architecture decisions
+- **Sharding and replication** handle scale
+- **Caching** reduces latency and load
+- **API design** impacts performance and usability
+- **Microservices** provide flexibility and scalability
+- **Trade-offs** are central to good design
+- **Communication** helps interviewers understand your thinking
+- **Scalability** must be planned from the start
+
+---
+
+## 🔗 Next Steps
+
+**Tomorrow (Day 4):** Final Capstone Project Showcase  
+**Prepare:** Your best work and talking points!
 │   │   ├── auth.service.js
 │   │   └── post.service.js
 │   ├── hooks/

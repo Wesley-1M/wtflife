@@ -1,32 +1,385 @@
-# Week 12: Day 1 - Performance Optimization
+# Week 12: Day 1 - Testing Fundamentals
 
 **Duration:** 2.5 hours  
-**Difficulty:** ⭐⭐⭐⭐
+**Difficulty:** ⭐⭐⭐⭐ (Advanced)  
+**Prerequisites:** Week 11 Complete
 
 ---
 
-## Learning Objectives
+## 📚 Learning Objectives
 
-By the end of this day, you should:
-- Understand performance metrics
-- Know how to optimize frontend performance
-- Be able to profile applications
-- Understand backend optimization
+By the end of this lesson, you'll be able to:
+- ✅ Understand testing pyramid
+- ✅ Write unit tests with Jest
+- ✅ Test React components
+- ✅ Mock dependencies
+- ✅ Achieve good test coverage
 
-## Topics
+---
 
-- Performance metrics (Core Web Vitals)
-- Frontend optimization
-- Image optimization
-- Caching strategies
-- Code splitting
+## 1️⃣ Testing Pyramid
 
-## Core Web Vitals
+### Test Types
 
-### 1. Largest Contentful Paint (LCP)
-- Time until largest content element loads
-- Target: < 2.5s
-- Optimize: Remove render-blocking resources, optimize images
+```
+         E2E Tests (few)
+              /\
+             /  \
+            /    \
+           /      \
+          /--------\
+         /  Integration Tests
+        /            (some)
+       /\
+      /  \
+     /    \
+    /------\
+   / Unit Tests (many)
+  /                  \
+ /____________________\
+```
+
+### Test Categories
+
+```javascript
+// Unit Tests - Test single functions
+describe('Math', () => {
+  test('adds numbers', () => {
+    expect(add(2, 3)).toBe(5);
+  });
+});
+
+// Integration Tests - Test components together
+describe('Form', () => {
+  test('submits form data', () => {
+    // render component, interact, verify result
+  });
+});
+
+// E2E Tests - Test entire workflows
+describe('User signup', () => {
+  test('complete signup flow', () => {
+    // navigate, fill form, submit, verify in DB
+  });
+});
+```
+
+---
+
+## 2️⃣ Jest Setup & Basics
+
+### Installation
+
+```bash
+npm install --save-dev jest @testing-library/react @testing-library/jest-dom
+npx jest --init
+```
+
+### Configuration
+
+```javascript
+// jest.config.js
+module.exports = {
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1'
+  }
+};
+
+// jest.setup.js
+import '@testing-library/jest-dom';
+```
+
+### Basic Tests
+
+```javascript
+// math.test.js
+describe('Math functions', () => {
+  test('adds numbers', () => {
+    expect(2 + 3).toBe(5);
+  });
+
+  test('subtracts numbers', () => {
+    expect(5 - 2).toBe(3);
+  });
+
+  test('multiplies numbers', () => {
+    expect(4 * 5).toBe(20);
+  });
+
+  test('handles negative numbers', () => {
+    expect(-5 + 3).toBe(-2);
+  });
+});
+```
+
+---
+
+## 3️⃣ Testing React Components
+
+### Component Tests
+
+```jsx
+// Button.test.jsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Button } from './Button';
+
+describe('Button component', () => {
+  test('renders button with text', () => {
+    render(<Button>Click me</Button>);
+    
+    const button = screen.getByRole('button', { name: /click me/i });
+    expect(button).toBeInTheDocument();
+  });
+
+  test('calls onClick handler', async () => {
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click</Button>);
+    
+    const button = screen.getByRole('button');
+    await userEvent.click(button);
+    
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  test('disables button when disabled prop is true', () => {
+    render(<Button disabled>Click</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+  });
+});
+```
+
+### Form Component Testing
+
+```jsx
+// LoginForm.test.jsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LoginForm } from './LoginForm';
+
+describe('LoginForm', () => {
+  test('submits form with email and password', async () => {
+    const handleSubmit = jest.fn();
+    render(<LoginForm onSubmit={handleSubmit} />);
+    
+    const emailInput = screen.getByLabelText(/email/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /login/i });
+    
+    await userEvent.type(emailInput, 'test@example.com');
+    await userEvent.type(passwordInput, 'password123');
+    await userEvent.click(submitButton);
+    
+    expect(handleSubmit).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123'
+    });
+  });
+
+  test('shows error message', async () => {
+    render(<LoginForm onSubmit={jest.fn()} error="Invalid credentials" />);
+    
+    const error = screen.getByText(/invalid credentials/i);
+    expect(error).toBeInTheDocument();
+  });
+});
+```
+
+---
+
+## 4️⃣ Mocking & Dependencies
+
+### Mocking Functions
+
+```javascript
+// api.js
+export async function fetchUser(id) {
+  const res = await fetch(`/api/users/${id}`);
+  return res.json();
+}
+
+// api.test.js
+import { fetchUser } from './api';
+
+jest.mock('./api');
+
+test('fetches user', async () => {
+  const mockUser = { id: 1, name: 'John' };
+  fetchUser.mockResolvedValueOnce(mockUser);
+  
+  const user = await fetchUser(1);
+  
+  expect(user).toEqual(mockUser);
+  expect(fetchUser).toHaveBeenCalledWith(1);
+});
+```
+
+### Mocking HTTP Requests
+
+```javascript
+// user.service.test.js
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+import { getUser } from './user.service';
+
+const server = setupServer(
+  rest.get('/api/users/:id', (req, res, ctx) => {
+    return res(ctx.json({ id: req.params.id, name: 'John' }));
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+test('fetches user', async () => {
+  const user = await getUser(1);
+  expect(user.name).toBe('John');
+});
+```
+
+### Mocking React Hooks
+
+```jsx
+// useUser.test.js
+import { renderHook, waitFor } from '@testing-library/react';
+import { useUser } from './useUser';
+
+jest.mock('./api', () => ({
+  fetchUser: jest.fn()
+}));
+
+test('loads user data', async () => {
+  const { result } = renderHook(() => useUser(1));
+  
+  await waitFor(() => {
+    expect(result.current.user).toBeDefined();
+  });
+});
+```
+
+---
+
+## 5️⃣ Test Coverage
+
+### Coverage Configuration
+
+```javascript
+// jest.config.js
+module.exports = {
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx}',
+    '!src/**/*.test.{js,jsx}',
+    '!src/index.js'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 70,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  }
+};
+```
+
+### Generate Coverage Report
+
+```bash
+# Run tests with coverage
+npm test -- --coverage
+
+# Output shows:
+# Lines: 85.2%
+# Statements: 85.2%
+# Functions: 80.5%
+# Branches: 75.3%
+```
+
+---
+
+## 6️⃣ Testing Best Practices
+
+### Good Test Patterns
+
+```javascript
+// ✅ Good - Clear, focused test
+test('validates email format', () => {
+  const isValid = validateEmail('test@example.com');
+  expect(isValid).toBe(true);
+});
+
+// ❌ Bad - Tests too much
+test('user registration', () => {
+  // Tests email, password, validation, submission, etc.
+});
+```
+
+### Test Organization
+
+```javascript
+describe('UserService', () => {
+  let userService;
+
+  beforeEach(() => {
+    userService = new UserService();
+  });
+
+  describe('createUser', () => {
+    test('creates user with valid data', () => {
+      // test
+    });
+
+    test('throws error with invalid email', () => {
+      // test
+    });
+  });
+
+  describe('updateUser', () => {
+    test('updates user properties', () => {
+      // test
+    });
+  });
+});
+```
+
+---
+
+## 📝 Practice Exercises
+
+### Exercise 1: Unit Tests
+Test utility functions thoroughly
+
+### Exercise 2: Component Tests
+Test React components with Jest
+
+### Exercise 3: Mocking
+Mock API calls and dependencies
+
+### Exercise 4: Coverage
+Achieve 80% code coverage
+
+---
+
+## ✅ Summary
+
+- **Unit tests** test individual functions
+- **Jest** is the testing framework
+- **React Testing Library** tests components
+- **Mocking** isolates code under test
+- **Coverage** measures test quality
+- **Best practices** lead to maintainable tests
+
+---
+
+## 🔗 Next Steps
+
+**Tomorrow (Day 2):** React Testing Library Advanced  
+**Continue:** Master modern testing!
 
 ### 2. First Input Delay (FID)
 - Time from user input to browser response
