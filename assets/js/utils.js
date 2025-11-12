@@ -124,30 +124,39 @@ const Navigation = {
     const toggle = DOM.get('.nav-toggle');
     const nav = DOM.get('nav');
     
-    if (toggle && nav) {
-      DOM.on(toggle, 'click', () => {
-        DOM.toggleClass(nav, 'active');
+    if (!toggle || !nav) return false;
+    
+    toggle.addEventListener('click', () => {
+      nav.classList.toggle('active');
+      this.updateToggleIcon();
+    });
+
+    // Close menu when link clicked
+    DOM.getAll('nav a').forEach(link => {
+      link.addEventListener('click', () => {
+        nav.classList.remove('active');
         this.updateToggleIcon();
       });
+    });
 
-      // Close menu when link clicked
-      DOM.onAll('nav a', 'click', () => {
-        DOM.removeClass(nav, 'active');
+    // Close menu on window resize to large
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 768) {
+        nav.classList.remove('active');
         this.updateToggleIcon();
-      });
-
-      // Close menu on window resize to large
-      window.addEventListener('resize', () => {
-        if (window.innerWidth > 768) {
-          DOM.removeClass(nav, 'active');
-        }
-      });
-    }
+      }
+    });
+    
+    return true;
   },
 
   updateToggleIcon() {
     const toggle = DOM.get('.nav-toggle');
-    const isOpen = DOM.hasClass('nav', 'active');
+    const nav = DOM.get('nav');
+    
+    if (!toggle || !nav) return;
+    
+    const isOpen = nav.classList.contains('active');
     const spans = toggle.querySelectorAll('span');
     
     if (isOpen) {
